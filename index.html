@@ -3,599 +3,776 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>paralixium | bio</title>
+    <title>4CH</title>
     <style>
-        :root {
-            --bg: #050505;
-            --terminal-bg: #080808;
-            --green-neon: #39ff14;
-            --green-bright: #00ff41;
-            --green-dim: #00aa2e;
-            --green-dark: #005c1a;
-            --green-glow: rgba(0, 255, 65, 0.7);
-            --green-glow-strong: rgba(57, 255, 20, 0.9);
-            --text: #e0e0e0;
-            --cyan: #00cccc;
-            --shadow-glow: 0 0 8px rgba(0, 255, 65, 0.8), 0 0 18px rgba(0, 255, 65, 0.5);
-            --shadow-glow-strong: 0 0 12px rgba(57, 255, 20, 0.9), 0 0 30px rgba(57, 255, 20, 0.7);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: var(--bg);
-            font-family: 'Courier New', 'Lucida Console', 'Consolas', monospace;
-            overflow: hidden;
-            width: 100vw; height: 100vh;
-            cursor: crosshair;
-            user-select: none;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
-        #matrixCanvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; background: #000;
-            transition: opacity 0.6s ease-out;
-        }
-        #matrixCanvas.fading { opacity: 0; pointer-events: none; }
-        #matrixCanvas.hidden { display: none; }
-        #splashTitle {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 102;
-            font-family: 'Courier New', 'Lucida Console', 'Consolas', monospace;
-            font-size: clamp(32px, 8vw, 72px);
-            font-weight: bold; letter-spacing: 4px;
-            text-align: center; transition: opacity 0.5s ease-out;
-            line-height: 1.2; cursor: pointer;
-        }
-        #splashTitle .neon-green {
-            color: var(--green-neon);
-            text-shadow: 0 0 15px var(--green-neon), 0 0 35px var(--green-neon), 0 0 70px #00ff66;
-            animation: titleGlow 2.5s ease-in-out infinite;
-        }
-        #splashTitle .white-text {
-            color: #ffffff;
-            text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 25px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.3);
-            margin-left: 12px;
-        }
-        @keyframes titleGlow {
-            0%,100% { text-shadow: 0 0 15px var(--green-neon), 0 0 35px var(--green-neon), 0 0 70px #00ff66; }
-            50% { text-shadow: 0 0 25px #00ff66, 0 0 55px #00ff44, 0 0 90px #00ff44; }
-        }
-        #clickHint {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            z-index: 101; color: var(--green-neon); font-size: 13px;
-            font-weight: bold; letter-spacing: 4px;
-            text-shadow: var(--shadow-glow-strong);
-            animation: hintPulse 2s ease-in-out infinite;
-            pointer-events: none; text-align: center;
-        }
-        @keyframes hintPulse {
-            0%,100% { opacity: 0.5; text-shadow: var(--shadow-glow); }
-            50% { opacity: 1; text-shadow: var(--shadow-glow-strong); }
-        }
-        #consoleScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 90; background: var(--terminal-bg);
-            display: none; flex-direction: column;
-            padding: 20px 24px; overflow: hidden;
-            box-shadow: inset 0 0 60px rgba(0,255,65,0.03);
-        }
-        #consoleScreen.active { display: flex; }
-        #consoleScreen.fadingOut { opacity: 0; transition: opacity 0.5s ease-out; pointer-events: none; }
-        .console-header {
-            text-align: center; font-size: 18px; font-weight: bold;
-            letter-spacing: 3px; padding: 8px 0 14px;
-            border-bottom: 1px solid var(--green-dark);
-            margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,255,65,0.1);
-            word-break: break-word;
-        }
-        .console-header .neon-green {
-            color: var(--green-neon); text-shadow: var(--shadow-glow-strong);
-            animation: headerGlowGreen 3s ease-in-out infinite;
-        }
-        .console-header .white-text {
-            color: #ffffff; text-shadow: 0 0 5px rgba(255,255,255,0.5), 0 0 12px rgba(255,255,255,0.3);
-        }
-        @keyframes headerGlowGreen {
-            0%,100% { text-shadow: 0 0 10px var(--green-neon), 0 0 25px var(--green-neon); }
-            50% { text-shadow: 0 0 20px #00ff66, 0 0 45px #00ff44, 0 0 70px #00ff44; }
-        }
-        .console-body {
-            flex: 1; color: var(--green-dim); font-size: 14px;
-            font-weight: bold; line-height: 1.7; overflow-y: auto;
-            padding: 6px 4px; letter-spacing: 0.6px;
-            white-space: pre-wrap; word-break: break-all;
-            text-shadow: 0 0 3px rgba(0,255,65,0.3);
-        }
-        .console-body .line { opacity: 0; animation: lineAppear 0.15s forwards; font-weight: bold; text-shadow: 0 0 6px rgba(0,255,65,0.4); }
-        .console-body .line.visible { opacity: 1; }
-        @keyframes lineAppear { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
-        .console-body .line-green { color: var(--green-bright); text-shadow: 0 0 10px var(--green-glow); }
-        .console-body .line-amber { color: #ffaa00; text-shadow: 0 0 8px rgba(255,170,0,0.7); }
-        .console-body .line-cyan { color: var(--cyan); text-shadow: 0 0 8px rgba(0,204,204,0.7); }
-        .console-body .line-dim { color: #aaaaaa; text-shadow: 0 0 4px rgba(255,255,255,0.3); }
-        .console-body .cursor-blink {
-            display: inline-block; width: 10px; height: 16px;
-            background: var(--green-neon); animation: blink 0.7s step-end infinite;
-            vertical-align: middle; margin-left: 3px;
-            box-shadow: 0 0 10px var(--green-glow), 0 0 20px var(--green-glow);
-        }
-        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-        .scanlines {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 200;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
-            opacity: 0.6;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Экран с тремя точками */
-        #loadingDotsScreen {
+        body {
+            background-color: #000; 
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* --- ЭКРАН ЗАСТАВКИ --- */
+        #splash-screen {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 85;
-            background: rgba(0,0,0,0.6); /* полупрозрачный фон, чтобы матрица была видна */
-            backdrop-filter: blur(2px);
-            display: none;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+            display: flex;
             justify-content: center;
             align-items: center;
-            gap: 15px; /* точки ближе друг к другу */
-            opacity: 1;
-            transition: opacity 0.6s ease-out;
+            z-index: 1000;
+            transition: opacity 1.2s ease-in-out;
         }
-        #loadingDotsScreen.active { display: flex; }
-        #loadingDotsScreen.fading { opacity: 0; pointer-events: none; }
-        .dot {
-            font-size: 100px;
-            color: #ffffff;
-            text-shadow: 0 0 25px rgba(255,255,255,0.9), 0 0 50px rgba(255,255,255,0.6);
+
+        #splash-screen.fade-out {
             opacity: 0;
-            animation: dotSequence 2s ease-in-out infinite;
-        }
-        .dot:nth-child(1) { animation-delay: 0s; }
-        .dot:nth-child(2) { animation-delay: 0.6s; }
-        .dot:nth-child(3) { animation-delay: 1.2s; }
-        @keyframes dotSequence {
-            0%, 15% { opacity: 0; }
-            40%, 60% { opacity: 1; }
-            85%, 100% { opacity: 0; }
+            pointer-events: none;
         }
 
-        #mainScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 80; background: var(--bg);
-            display: none; flex-direction: column;
-            overflow-y: auto; overflow-x: hidden;
-            box-shadow: inset 0 0 100px rgba(0,255,65,0.02);
+        .splash-title {
+            font-size: 8rem;
+            font-weight: 900;
+            letter-spacing: 10px;
+            color: #A3C515;
+            text-shadow: 0 0 60px rgba(163, 197, 21, 0.4);
+            animation: gentlePulse 2s infinite alternate ease-in-out;
         }
-        #mainScreen.active { display: flex; }
-        #mainScreen.fadingIn { animation: fadeInMain 0.7s ease-out forwards; }
-        @keyframes fadeInMain { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: blur(0); } }
-        .main-header {
-            border-bottom: 2px solid var(--green-dark);
-            padding: 18px 24px 14px;
-            display: flex; align-items: center; justify-content: flex-start;
-            background: rgba(0,0,0,0.85); position: sticky; top: 0; z-index: 10;
-            backdrop-filter: blur(8px); box-shadow: 0 2px 15px rgba(0,255,65,0.2);
-        }
-        .main-header .logo {
-            color: var(--green-neon); font-size: 20px; font-weight: bold;
-            letter-spacing: 3px; text-shadow: var(--shadow-glow-strong);
-            filter: drop-shadow(0 0 8px rgba(0,255,65,0.5));
-        }
-        .main-header .logo .underscore { animation: blink 0.8s step-end infinite; }
-        .main-content { flex: 1; padding: 28px 24px; max-width: 900px; margin: 0 auto; width: 100%; }
-        .bio-section {
-            margin-bottom: 32px; border-left: 3px solid var(--green-dark);
-            padding-left: 20px; transition: all 0.3s;
-            background: rgba(0,10,0,0.2); box-shadow: 0 0 15px rgba(0,255,65,0.05);
-            border-radius: 0 4px 4px 0;
-        }
-        .bio-section:hover {
-            border-left-color: var(--green-neon);
-            box-shadow: 0 0 25px rgba(0,255,65,0.15), inset 0 0 15px rgba(0,255,65,0.03);
-            background: rgba(0,20,0,0.3);
-        }
-        .bio-section h2 {
-            color: var(--green-neon); font-size: 17px; font-weight: bold;
-            letter-spacing: 2px; margin-bottom: 12px;
-            text-shadow: var(--shadow-glow-strong);
-            display: flex; align-items: center; gap: 8px;
-        }
-        .bio-section h2::before {
-            content: '>'; color: var(--green-dim);
-            text-shadow: 0 0 6px var(--green-glow); font-size: 18px;
-        }
-        .bio-section p {
-            color: var(--text); font-size: 14px; font-weight: 600;
-            line-height: 1.8; letter-spacing: 0.5px;
-            text-shadow: 0 0 6px rgba(255,255,255,0.1);
-        }
-        .status-dot {
-            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-            background: var(--green-neon);
-            box-shadow: 0 0 10px var(--green-glow), 0 0 22px var(--green-glow);
-            margin-right: 8px; animation: statusPulse 2s ease-in-out infinite;
-        }
-        @keyframes statusPulse {
-            0%,100% { box-shadow: 0 0 10px var(--green-glow), 0 0 22px var(--green-glow); }
-            50% { box-shadow: 0 0 18px #00ff66, 0 0 40px #00ff66, 0 0 60px #00ff44; }
-        }
-        .neon-quote {
-            font-size: 12px; font-weight: bold; color: var(--green-neon);
-            text-shadow: 0 0 8px var(--green-neon), 0 0 16px var(--green-neon);
-            margin-top: 16px; font-style: italic; letter-spacing: 0.8px; opacity: 0.95;
-        }
-        .buttons-block {
-            display: flex; gap: 16px; flex-wrap: wrap;
-            justify-content: flex-start; margin-top: 8px; margin-bottom: 40px;
-        }
-        .oval-btn {
-            display: inline-block; padding: 14px 32px; border-radius: 50px;
-            background: rgba(0, 20, 0, 0.6); border: 1.5px solid var(--green-dark);
-            color: var(--green-bright); font-family: inherit; font-size: 15px;
-            font-weight: bold; letter-spacing: 1.8px; text-decoration: none;
-            cursor: pointer; transition: all 0.25s ease;
-            text-shadow: 0 0 6px var(--green-glow);
-            box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
-            backdrop-filter: blur(4px); text-align: center; min-width: 160px;
-        }
-        .oval-btn:hover {
-            background: rgba(0, 40, 0, 0.8); border-color: var(--green-neon);
-            color: var(--green-neon); text-shadow: 0 0 12px var(--green-glow-strong);
-            box-shadow: 0 0 18px rgba(0, 255, 65, 0.4); transform: translateY(-1px);
-        }
-        #toast {
-            position: fixed; bottom: 30px; right: 30px;
-            background: rgba(0, 10, 0, 0.9); border: 1px solid var(--green-neon);
-            color: var(--green-neon); padding: 12px 20px; border-radius: 30px;
-            font-family: inherit; font-size: 13px; font-weight: bold;
-            letter-spacing: 1px; text-shadow: 0 0 6px var(--green-glow);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
-            opacity: 0; transform: translateY(20px); pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease; z-index: 300;
-        }
-        #toast.show { opacity: 1; transform: translateY(0); }
 
-        @media (max-width: 600px) {
-            #splashTitle { font-size: 28px; letter-spacing: 2px; }
-            .console-header { font-size: 14px; }
-            .console-body { font-size: 12px; }
-            .main-header { padding: 12px 14px; }
-            .main-header .logo { font-size: 16px; }
-            .main-content { padding: 16px 12px; }
-            .bio-section { padding-left: 14px; }
-            .bio-section h2 { font-size: 15px; }
-            .bio-section p { font-size: 12px; }
-            #clickHint { font-size: 10px; bottom: 24px; }
-            .neon-quote { font-size: 10px; }
-            .buttons-block { gap: 12px; }
-            .oval-btn { padding: 10px 22px; font-size: 13px; min-width: 130px; }
-            #toast { right: 16px; bottom: 16px; font-size: 11px; padding: 10px 16px; }
-            .dot { font-size: 60px; }
-            #loadingDotsScreen { gap: 10px; }
+        @keyframes gentlePulse {
+            0% { transform: scale(1); text-shadow: 0 0 40px rgba(163, 197, 21, 0.3); }
+            100% { transform: scale(1.02); text-shadow: 0 0 80px rgba(163, 197, 21, 0.6); }
+        }
+
+        /* --- ФИКСИРОВАННЫЙ ХЕДЕР --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px 50px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            background: linear-gradient(45deg, #A3C515, #6b8e23);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- ГЕРОЙ-СЕКЦИЯ --- */
+        .hero-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            height: 100vh;
+            padding: 0 12%;
+            margin-top: 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-text-block {
+            position: relative;
+            z-index: 2;
+            max-width: 65%;
+        }
+
+        .hero-text-block h2 {
+            font-size: 8.5rem;
+            line-height: 1.05;
+            font-weight: 800;
+            letter-spacing: 3px;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: slideUpFade 0.9s forwards;
+        }
+
+        .hero-text-block h2:nth-child(1) { animation-delay: 0.2s; }
+        .hero-text-block h2:nth-child(2) { animation-delay: 0.5s; }
+        .hero-text-block h2:nth-child(3) { animation-delay: 0.8s; }
+
+        .text-white { color: #ffffff; }
+        .text-green { color: #A3C515; }
+
+        @keyframes slideUpFade {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- КНОПКА DISCORD --- */
+        .btn-container {
+            margin-top: 60px;
+            position: relative;
+            z-index: 2;
+            opacity: 0;
+            animation: slideUpFade 0.9s forwards 1.2s;
+        }
+
+        .discord-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 22px 65px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            background-color: #5865F2;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(88, 101, 242, 0.3);
+        }
+
+        .discord-btn:hover {
+            background-color: #4752c4;
+            transform: scale(1.05) translateY(-3px);
+            box-shadow: 0 0 40px rgba(88, 101, 242, 0.6);
+        }
+
+        .discord-icon {
+            width: 32px;
+            height: 32px;
+            fill: currentColor;
+        }
+
+        /* --- ДЕКОРАТИВНЫЙ КЛЕВЕР --- */
+        .right-deco-clover {
+            position: absolute;
+            top: 50%;
+            right: 5%;
+            transform: translateY(-50%);
+            width: 600px;
+            height: 600px;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.3;
+            animation: slowSpin 20s infinite linear;
+        }
+
+        .right-deco-clover svg {
+            width: 100%;
+            height: 100%;
+            fill: #A3C515;
+            filter: drop-shadow(0 0 50px rgba(163, 197, 21, 0.4)) drop-shadow(0 0 100px rgba(163, 197, 21, 0.1));
+        }
+
+        @keyframes slowSpin {
+            0% { transform: translateY(-50%) rotate(0deg) scale(1); }
+            50% { transform: translateY(-50%) rotate(180deg) scale(1.1); }
+            100% { transform: translateY(-50%) rotate(360deg) scale(1); }
+        }
+
+        /* --- БЛОК ИНФОРМАЦИЯ --- */
+        .info-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 100px 12% 50px 12%;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #000;
+        }
+
+        .info-title {
+            font-size: 5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+
+        .info-data {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 50px;
+            font-size: 1.4rem;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .info-label {
+            color: #666;
+            min-width: 80px;
+        }
+
+        .info-value {
+            color: #A3C515;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* --- БЛОК ДОНАТ (БЕЗ СМАЙЛИКОВ) --- */
+        .donate-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 12% 120px 12%;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #000;
+        }
+
+        .donate-title {
+            font-size: 5rem;
+            font-weight: 900;
+            letter-spacing: 6px;
+            background: linear-gradient(45deg, #A3C515, #6b8e23);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 60px;
+            text-shadow: 0 0 40px rgba(163, 197, 21, 0.1);
+        }
+
+        .donate-grid {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .donate-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 45px 30px 35px;
+            width: 300px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .donate-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 0%, rgba(163, 197, 21, 0.1), transparent 60%);
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+
+        .donate-card:hover::before {
+            opacity: 1;
+        }
+
+        .donate-card:hover {
+            transform: translateY(-12px) scale(1.02);
+            border-color: rgba(163, 197, 21, 0.5);
+            box-shadow: 0 20px 60px rgba(163, 197, 21, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .donate-card .product-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .donate-card .product-price {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #A3C515;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .donate-card .product-desc {
+            font-size: 0.9rem;
+            color: #777;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .donate-card .order-btn {
+            padding: 14px 0;
+            background: transparent;
+            border: 2px solid #A3C515;
+            border-radius: 50px;
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 80%;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .donate-card .order-btn:hover {
+            background: #A3C515;
+            color: #000;
+            box-shadow: 0 0 30px rgba(163, 197, 21, 0.4);
+            transform: scale(1.05);
+            width: 90%;
+        }
+
+        /* --- МОДАЛЬНОЕ ОКНО --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: #0d0d0d;
+            border: 1px solid #222;
+            border-radius: 30px;
+            padding: 0;
+            max-width: 900px;
+            width: 95%;
+            display: flex;
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-left {
+            flex: 1;
+            padding: 50px 40px;
+            background: #111;
+            border-right: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 400px;
+        }
+
+        .modal-left h3 {
+            font-size: 3rem;
+            color: #A3C515;
+            font-weight: 800;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .modal-left p {
+            color: #888;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 90%;
+        }
+
+        .modal-right {
+            flex: 1;
+            padding: 50px 40px;
+            background: #0d0d0d;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+        }
+
+        .modal-right .form-title {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .modal-input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 50px;
+            padding: 16px 25px;
+            color: #fff;
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .modal-input::placeholder { color: #555; }
+        .modal-input:focus {
+            border-color: #A3C515;
+            box-shadow: 0 0 15px rgba(163, 197, 21, 0.1);
+            background: #1f1f1f;
+        }
+
+        .modal-submit-btn {
+            padding: 16px 30px;
+            background: #A3C515;
+            border: none;
+            border-radius: 50px;
+            color: #000;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+            letter-spacing: 1px;
+        }
+
+        .modal-submit-btn:hover {
+            background: #8aac12;
+            transform: scale(1.02);
+            box-shadow: 0 0 25px rgba(163, 197, 21, 0.3);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: #555;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .close-modal:hover { color: #fff; }
+
+        /* --- САМЫЙ НИЗ: ООО И КОПИРАЙТ --- */
+        .global-footer {
+            width: 100%;
+            padding: 30px 12% 40px 12%;
+            background: #000;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .global-footer .company-name {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .global-footer .company-name span {
+            color: #888;
+        }
+
+        .global-footer .year {
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        /* --- АДАПТИВ --- */
+        @media (max-width: 1400px) {
+            .right-deco-clover { width: 450px; height: 450px; right: 2%; }
+        }
+
+        @media (max-width: 1024px) {
+            .hero-text-block h2 { font-size: 6rem; }
+            .discord-btn { padding: 18px 50px; font-size: 1.4rem; }
+            .right-deco-clover { width: 350px; height: 350px; right: 0; }
+            .hero-text-block { max-width: 60%; }
+            .info-title { font-size: 3.5rem; }
+            .donate-title { font-size: 3.5rem; }
+            .donate-card { width: 260px; }
+            .global-footer { padding: 25px 5% 30px 5%; }
+        }
+
+        @media (max-width: 768px) {
+            .splash-title { font-size: 4.5rem; letter-spacing: 5px; }
+            header { padding: 15px 20px; }
+            .header-title { font-size: 1.5rem; }
+            .hero-section { padding: 0 5%; margin-top: 60px; }
+            .hero-text-block { max-width: 100%; }
+            .hero-text-block h2 { font-size: 4rem; }
+            .discord-btn { padding: 18px 40px; font-size: 1.3rem; width: 100%; justify-content: center; }
+            .discord-icon { width: 28px; height: 28px; }
+            .btn-container { width: 100%; max-width: 350px; }
+            .right-deco-clover { display: none; }
+            
+            .info-section { padding: 60px 5% 30px 5%; }
+            .info-title { font-size: 2.5rem; }
+            .info-data { font-size: 1rem; gap: 10px; }
+            .info-row { flex-direction: column; align-items: flex-start; gap: 5px; }
+            
+            .donate-section { padding: 60px 5% 80px 5%; }
+            .donate-title { font-size: 2.8rem; }
+            .donate-grid { gap: 20px; }
+            .donate-card { width: 100%; max-width: 320px; padding: 35px 20px; }
+            .donate-card .product-desc { margin-bottom: 20px; }
+            
+            .global-footer { flex-direction: column; gap: 15px; align-items: center; text-align: center; padding: 20px 5% 30px 5%; }
+            
+            .modal-content { flex-direction: column; border-radius: 20px; max-height: 90vh; }
+            .modal-left { border-right: none; border-bottom: 1px solid #222; padding: 30px 25px; min-height: auto; }
+            .modal-left h3 { font-size: 2.2rem; }
+            .modal-left p { max-width: 100%; }
+            .modal-right { padding: 30px 25px; }
         }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
-    <canvas id="matrixCanvas"></canvas>
-    <div id="splashTitle">
-        <span class="neon-green">paralixium</span> <span class="white-text">presents</span>
-    </div>
-    <div id="clickHint">[ НАЖМИ КУДА-НИБУДЬ ЧТОБЫ ПРОДОЛЖИТЬ ]</div>
 
-    <!-- Console Screen -->
-    <div id="consoleScreen">
-        <div class="console-header">
-            <span class="neon-green">paralixium</span> <span class="white-text">presents</span>
-        </div>
-        <div class="console-body" id="consoleBody"></div>
+    <!-- 1. ЭКРАН ЗАСТАВКИ -->
+    <div id="splash-screen">
+        <h1 class="splash-title">4CH</h1>
     </div>
 
-    <!-- Экран с тремя точками (матрица на фоне) -->
-    <div id="loadingDotsScreen">
-        <span class="dot">.</span>
-        <span class="dot">.</span>
-        <span class="dot">.</span>
-    </div>
-
-    <!-- Main Bio Screen -->
-    <div id="mainScreen">
-        <header class="main-header">
-            <div class="logo">paralixium<span class="underscore">_</span></div>
+    <!-- 2. ОСНОВНОЙ САЙТ -->
+    <div id="main-site" style="display: none;">
+        
+        <!-- Хедер -->
+        <header>
+            <div class="header-title">4CH</div>
         </header>
-        <div class="main-content">
-            <section class="bio-section" id="info">
-                <h2>info</h2>
-                <p>
-                    <span class="status-dot"></span> STATUS: <span style="color:#00ff41; text-shadow: 0 0 8px #00ff41;">ACTIVE</span> &nbsp;|&nbsp;
-                    UPTIME: <span style="color:#00cccc; text-shadow: 0 0 8px #00cccc;">99.7%</span> &nbsp;|&nbsp;
-                    LOC: <span style="color:#aaaaaa;">[REDACTED]</span>
-                </p>
-                <p class="neon-quote">
-                    Жизнь коротка, искусство вечно, случайные обстоятельства скоропреходящи, опыт обманчив, суждения трудны.
-                </p>
-            </section>
-            <div class="buttons-block">
-                <a href="https://discord-sensor.com/members/1372205860452962418" target="_blank" class="oval-btn">Discord Sensor</a>
-                <a href="https://discord.gg/asterstore" target="_blank" class="oval-btn">Aster Store</a>
-                <button class="oval-btn" id="copyEmailBtn">Email</button>
+
+        <!-- Главная секция -->
+        <section class="hero-section">
+            <div class="hero-text-block">
+                <h2 class="text-white">Свои</h2>
+                <h2 class="text-white">Среди</h2>
+                <h2 class="text-green">Своих</h2>
+
+                <!-- Кнопка Discord -->
+                <div class="btn-container">
+                    <a href="https://discord.gg/ваша-ссылка" target="_blank" class="discord-btn">
+                        <svg class="discord-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3529.6987.7644 1.3628 1.225 1.993a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.419-2.1568 2.419z"/>
+                        </svg>
+                        Discord
+                    </a>
+                </div>
             </div>
+
+            <!-- Клевер справа -->
+            <div class="right-deco-clover">
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M50 50 C50 50, 10 45, 10 25 C10 5, 35 5, 45 15 C50 20, 48 35, 50 50" />
+                    <path d="M50 50 C50 50, 55 10, 75 10 C95 10, 95 35, 85 45 C80 50, 65 48, 50 50" />
+                    <path d="M50 50 C50 50, 90 55, 90 75 C90 95, 65 95, 55 85 C50 80, 52 65, 50 50" />
+                    <path d="M50 50 C50 50, 45 90, 25 90 C5 90, 5 65, 15 55 C20 50, 35 52, 50 50" />
+                </svg>
+            </div>
+
+        </section>
+
+        <!-- БЛОК ИНФОРМАЦИЯ -->
+        <section class="info-section">
+            <h2 class="info-title">Информация</h2>
+            <div class="info-data">
+                <div class="info-row">
+                    <span class="info-label">IP:</span>
+                    <span class="info-value">4ch.ru</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Версия:</span>
+                    <span class="info-value">1.21.11</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- БЛОК ДОНАТ (ТЕПЕРЬ БЕЗ СМАЙЛИКОВ) -->
+        <section class="donate-section">
+            <h2 class="donate-title">Донат</h2>
+            
+            <div class="donate-grid">
+                <!-- Товар 1: TAG -->
+                <div class="donate-card">
+                    <div class="product-name">TAG</div>
+                    <div class="product-price">690 ₽</div>
+                    <div class="product-desc">Индивидуальный набор<br>игровых привилегий</div>
+                    <button class="order-btn" onclick="openModal('TAG', 'Индивидуальный набор игровых привилегий')">Купить</button>
+                </div>
+
+                <!-- Товар 2: Премиум -->
+                <div class="donate-card">
+                    <div class="product-name">Премиум</div>
+                    <div class="product-price">1 490 ₽</div>
+                    <div class="product-desc">Максимальный доступ<br>к эксклюзивным функциям</div>
+                    <button class="order-btn" onclick="openModal('Премиум', 'Максимальный доступ к эксклюзивным функциям')">Купить</button>
+                </div>
+
+                <!-- Товар 3: Проходка -->
+                <div class="donate-card">
+                    <div class="product-name">Проходка</div>
+                    <div class="product-price">2 190 ₽</div>
+                    <div class="product-desc">Быстрый доступ к<br>закрытым игровым зонам</div>
+                    <button class="order-btn" onclick="openModal('Проходка', 'Быстрый доступ к закрытым игровым зонам')">Купить</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- САМЫЙ НИЗ: ООО -->
+        <div class="global-footer">
+            <div class="company-name">ООО <span>«Четырехлистный Клевер»</span></div>
+            <div class="year">© 2026 Все права защищены</div>
+        </div>
+
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- МОДАЛЬНОЕ ОКНО (СЛЕВА - ТОВАР, СПРАВА - ФОРМА)                 -->
+    <!-- ============================================================ -->
+    <div class="modal-overlay" id="donateModal">
+        <div class="modal-content">
+            
+            <!-- Левая часть -->
+            <div class="modal-left">
+                <h3 id="modalProductName">TAG</h3>
+                <p id="modalProductDesc">Индивидуальный набор игровых привилегий</p>
+            </div>
+
+            <!-- Правая часть: Форма -->
+            <div class="modal-right">
+                <button class="close-modal" onclick="closeModal()">✕</button>
+                
+                <div class="form-title">Введите данные для заказа</div>
+                
+                <input type="text" class="modal-input" id="inputNick" placeholder="Ваш никнейм">
+                <input type="email" class="modal-input" id="inputEmail" placeholder="Ваша почта">
+                <input type="text" class="modal-input" id="inputCoupon" placeholder="Купон (если есть)">
+                
+                <button class="modal-submit-btn" onclick="submitOrder()">Купить</button>
+            </div>
+
         </div>
     </div>
-    <div id="toast">Ссылка скопирована</div>
 
+    <!-- 3. СКРИПТ -->
     <script>
-        (function() {
-            const matrixCanvas = document.getElementById('matrixCanvas');
-            const ctx = matrixCanvas.getContext('2d');
-            const splashTitle = document.getElementById('splashTitle');
-            const clickHint = document.getElementById('clickHint');
-            const consoleScreen = document.getElementById('consoleScreen');
-            const consoleBody = document.getElementById('consoleBody');
-            const loadingDotsScreen = document.getElementById('loadingDotsScreen');
-            const mainScreen = document.getElementById('mainScreen');
-            const copyEmailBtn = document.getElementById('copyEmailBtn');
-            const toast = document.getElementById('toast');
+        // --- ЛОГИКА ЗАСТАВКИ ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const splash = document.getElementById('splash-screen');
+            const mainSite = document.getElementById('main-site');
 
-            let matrixActive = true, consoleActive = false, mainActive = false, animationId, columns = [];
-            const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEFabcdef<>{}[]|/\\!@#$%^&*()_+-=:;';
-            const charsArray = chars.split('');
-            const fontSize = 15;
-            let canvasWidth, canvasHeight, numColumns;
+            setTimeout(() => {
+                splash.classList.add('fade-out');
 
-            function resizeCanvas() {
-                canvasWidth = window.innerWidth;
-                canvasHeight = window.innerHeight;
-                matrixCanvas.width = canvasWidth;
-                matrixCanvas.height = canvasHeight;
-                numColumns = Math.floor(canvasWidth / fontSize) + 1;
-                columns = [];
-                for (let i = 0; i < numColumns; i++) {
-                    columns.push({
-                        y: Math.random() * canvasHeight / fontSize * -1,
-                        speed: 0.6 + Math.random() * 2.8,
-                        charIndex: Math.floor(Math.random() * charsArray.length),
-                        updateRate: Math.floor(2 + Math.random() * 8),
-                        updateCounter: Math.floor(Math.random() * 8),
-                        brightness: 0.4 + Math.random() * 0.6,
-                        wingFactor: 0,
-                    });
-                }
-                const center = numColumns / 2;
-                columns.forEach((col, i) => {
-                    const dist = Math.abs(i - center) / center;
-                    col.wingFactor = 1 - dist * 0.7;
-                    col.speed *= (0.7 + col.wingFactor * 0.6);
-                    col.brightness = Math.min(1, col.brightness + col.wingFactor * 0.25);
-                });
-            }
-
-            function drawMatrix() {
-                if (!matrixActive) return;
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.055)';
-                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-                ctx.font = fontSize + 'px "Courier New", monospace';
-                columns.forEach((col, i) => {
-                    col.updateCounter++;
-                    if (col.updateCounter >= col.updateRate) {
-                        col.updateCounter = 0;
-                        col.charIndex = Math.floor(Math.random() * charsArray.length);
-                    }
-                    const char = charsArray[col.charIndex];
-                    const x = i * fontSize;
-                    const y = col.y * fontSize;
-                    ctx.fillStyle = `rgba(200,255,220,${0.9 + col.brightness * 0.1})`;
-                    ctx.shadowColor = '#00ff41';
-                    ctx.shadowBlur = 8 * col.brightness;
-                    ctx.fillText(char, x, y);
-                    const trailLength = 6 + Math.floor(col.brightness * 8);
-                    for (let t = 1; t <= trailLength; t++) {
-                        const trailY = y - t * fontSize;
-                        if (trailY < 0) continue;
-                        const alpha = (1 - t / trailLength) * 0.7 * col.brightness;
-                        ctx.fillStyle = `rgba(0,255,65,${alpha})`;
-                        ctx.shadowBlur = 3 * (1 - t / trailLength) * col.brightness;
-                        ctx.fillText(charsArray[Math.floor(Math.random() * charsArray.length)], x, trailY);
-                    }
-                    col.y += col.speed;
-                    if (col.y * fontSize > canvasHeight + fontSize * trailLength) {
-                        col.y = -Math.random() * 30;
-                        col.speed = 0.5 + Math.random() * 3.0;
-                    }
-                });
-                ctx.shadowBlur = 0;
-            }
-
-            function matrixLoop() {
-                if (!matrixActive) return;
-                drawMatrix();
-                animationId = requestAnimationFrame(matrixLoop);
-            }
-
-            function skipMatrix() {
-                if (!matrixActive) return;
-                matrixActive = false;
-                cancelAnimationFrame(animationId);
-                matrixCanvas.classList.add('fading');
-                splashTitle.style.opacity = '0';
-                clickHint.style.opacity = '0';
-                clickHint.style.pointerEvents = 'none';
                 setTimeout(() => {
-                    matrixCanvas.classList.add('hidden');
-                    splashTitle.style.display = 'none';
-                    clickHint.style.display = 'none';
-                    startConsole();
-                }, 650);
-            }
+                    splash.style.display = 'none';
+                    mainSite.style.display = 'block';
+                    document.body.style.overflow = 'auto';
+                }, 1200);
+            }, 3000);
+        });
 
-            matrixCanvas.addEventListener('click', skipMatrix);
-            splashTitle.addEventListener('click', skipMatrix);
-            clickHint.addEventListener('click', skipMatrix);
-            document.addEventListener('keydown', function(e) {
-                if (matrixActive && (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape')) {
-                    e.preventDefault();
-                    skipMatrix();
-                }
-            });
+        function restartSplash() {
+            const splash = document.getElementById('splash-screen');
+            const mainSite = document.getElementById('main-site');
 
-            let autoSkipTimer = setTimeout(() => { if (matrixActive) skipMatrix(); }, 14000);
-            document.addEventListener('mousemove', () => {
-                if (matrixActive) {
-                    clearTimeout(autoSkipTimer);
-                    autoSkipTimer = setTimeout(() => { if (matrixActive) skipMatrix(); }, 14000);
-                }
-            });
+            mainSite.style.display = 'none';
+            document.body.style.overflow = 'hidden';
 
-            const consoleLines = [
-                { text: '', delay: 60 },
-                { text: '[BOOT] Инициализация ядра системы...', delay: 300, cls: 'line-green' },
-                { text: '[BOOT] Проверка контрольных сумм... OK', delay: 250, cls: 'line-dim' },
-                { text: '[BOOT] Загрузка модулей безопасности...', delay: 200, cls: 'line-green' },
-                { text: '[BOOT] Модуль шифрования: AES-256-GCM... ACTIVATED', delay: 300, cls: 'line-cyan' },
-                { text: '[BOOT] Модуль обфускации трафика... ACTIVATED', delay: 250, cls: 'line-cyan' },
-                { text: '[BOOT] Установка защищённого соединения...', delay: 200, cls: 'line-green' },
-                { text: '[NET] Пинг шлюза: 0.3ms', delay: 180, cls: 'line-dim' },
-                { text: '[NET] Маршрутизация через TOR... OK', delay: 250, cls: 'line-amber' },
-                { text: '[NET] VPN-туннель установлен', delay: 200, cls: 'line-cyan' },
-                { text: '[SYS] Проверка окружения...', delay: 200, cls: 'line-green' },
-                { text: '[SYS] ОС: Linux 6.x | Arch: x86_64 | Shell: zsh', delay: 200, cls: 'line-dim' },
-                { text: '[SYS] Доступная память: 15.6 GB / 16.0 GB', delay: 150, cls: 'line-dim' },
-                { text: '[SYS] Загрузка CPU: 3%', delay: 150, cls: 'line-dim' },
-                { text: '', delay: 100 },
-                { text: '[LOAD] Загрузка пользовательских модулей...', delay: 300, cls: 'line-green' },
-                { text: '[LOAD] [#######···········] 34%', delay: 350, cls: 'line-amber' },
-                { text: '[LOAD] [##############····] 72%', delay: 400, cls: 'line-amber' },
-                { text: '[LOAD] [##################] 96%', delay: 350, cls: 'line-amber' },
-                { text: '[LOAD] [###################] 100% - OK', delay: 300, cls: 'line-green' },
-                { text: '', delay: 100 },
-                { text: '[AUTH] Проверка подписи окружения...', delay: 300, cls: 'line-green' },
-                { text: '[AUTH] Хеш совпадает. Доступ подтверждён.', delay: 250, cls: 'line-cyan' },
-                { text: '', delay: 150 },
-                { text: '>>> ACCESS GRANTED <<<', delay: 400, cls: 'line-green' },
-                { text: '', delay: 200 },
-                { text: 'Загрузка интерфейса...', delay: 300, cls: 'line-dim' },
-            ];
+            splash.style.display = 'flex';
+            splash.classList.remove('fade-out');
 
-            function startConsole() {
-                consoleActive = true;
-                consoleScreen.classList.add('active');
-                consoleBody.innerHTML = '';
-                mainScreen.classList.remove('active');
-                let totalDelay = 0;
-                consoleLines.forEach((lineObj, idx) => {
-                    totalDelay += lineObj.delay + 60;
-                    setTimeout(() => {
-                        if (!consoleActive) return;
-                        const div = document.createElement('div');
-                        div.className = 'line ' + (lineObj.cls || '');
-                        div.textContent = lineObj.text || ' ';
-                        consoleBody.appendChild(div);
-                        requestAnimationFrame(() => div.classList.add('visible'));
-                        consoleBody.scrollTop = consoleBody.scrollHeight;
-                        if (idx === consoleLines.length - 1) {
-                            setTimeout(() => showLoadingDots(), 900);
-                        }
-                    }, totalDelay);
-                });
+            setTimeout(() => {
+                splash.classList.add('fade-out');
                 setTimeout(() => {
-                    if (!consoleActive) return;
-                    const cursor = document.createElement('div');
-                    cursor.className = 'line';
-                    cursor.innerHTML = '<span class="cursor-blink"></span>';
-                    cursor.id = 'cursorLine';
-                    consoleBody.appendChild(cursor);
-                }, totalDelay - 200);
+                    splash.style.display = 'none';
+                    mainSite.style.display = 'block';
+                    document.body.style.overflow = 'auto';
+                }, 1200);
+            }, 3000);
+        }
+
+        // --- ЛОГИКА МОДАЛЬНОГО ОКНА ---
+        function openModal(productName, productDesc) {
+            const modal = document.getElementById('donateModal');
+            const title = document.getElementById('modalProductName');
+            const desc = document.getElementById('modalProductDesc');
+
+            title.textContent = productName;
+            desc.textContent = productDesc;
+
+            document.getElementById('inputNick').value = '';
+            document.getElementById('inputEmail').value = '';
+            document.getElementById('inputCoupon').value = '';
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('donateModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function submitOrder() {
+            const nick = document.getElementById('inputNick').value.trim();
+            const email = document.getElementById('inputEmail').value.trim();
+            const coupon = document.getElementById('inputCoupon').value.trim();
+            const product = document.getElementById('modalProductName').textContent;
+
+            if (!nick || !email) {
+                alert('Пожалуйста, заполните Никнейм и Почту!');
+                return;
             }
 
-            function showLoadingDots() {
-                const cursor = document.getElementById('cursorLine');
-                if (cursor) cursor.remove();
-                consoleScreen.classList.add('fadingOut');
-                setTimeout(() => {
-                    consoleActive = false;
-                    consoleScreen.classList.remove('active', 'fadingOut');
-                    consoleBody.innerHTML = '';
-                    
-                    // Показываем матрицу на фоне точек
-                    matrixCanvas.classList.remove('hidden', 'fading');
-                    matrixCanvas.style.opacity = '1';
-                    matrixCanvas.style.zIndex = '84'; // позади loadingDotsScreen (85)
-                    matrixActive = true;
-                    matrixLoop();
-                    
-                    loadingDotsScreen.classList.add('active');
-                    
-                    // Через 6 секунд переход к главному экрану
-                    setTimeout(() => {
-                        // Останавливаем матрицу
-                        matrixActive = false;
-                        cancelAnimationFrame(animationId);
-                        matrixCanvas.style.opacity = '0';
-                        matrixCanvas.style.transition = 'opacity 0.6s ease-out';
-                        
-                        loadingDotsScreen.classList.add('fading');
-                        setTimeout(() => {
-                            matrixCanvas.classList.add('hidden');
-                            matrixCanvas.style.zIndex = '100';
-                            loadingDotsScreen.classList.remove('active', 'fading');
-                            showMainScreen();
-                        }, 600);
-                    }, 6000);
-                }, 550);
+            alert(`✅ Заказ на товар "${product}" оформлен!\n\nНикнейм: ${nick}\nПочта: ${email}\nКупон: ${coupon || 'Не указан'}`);
+            
+            closeModal();
+        }
+
+        // Закрытие по клику вне окна
+        document.getElementById('donateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
             }
-
-            function showMainScreen() {
-                mainActive = true;
-                mainScreen.classList.add('active', 'fadingIn');
-                document.body.style.overflow = 'auto';
-                document.body.style.cursor = 'default';
-                setTimeout(() => mainScreen.classList.remove('fadingIn'), 750);
-            }
-
-            copyEmailBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText('paralixium@info.com');
-                } catch (err) {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = 'paralixium@info.com';
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                }
-                toast.classList.add('show');
-                setTimeout(() => toast.classList.remove('show'), 2000);
-            });
-
-            resizeCanvas();
-            matrixLoop();
-            window.addEventListener('resize', () => { if (matrixActive) resizeCanvas(); });
-
-            let keyBuffer = '';
-            document.addEventListener('keydown', (e) => {
-                if (!mainActive) return;
-                keyBuffer += e.key.toLowerCase();
-                if (keyBuffer.length > 20) keyBuffer = keyBuffer.slice(-20);
-                if (keyBuffer.includes('matrix')) {
-                    keyBuffer = '';
-                    matrixCanvas.classList.remove('hidden', 'fading');
-                    matrixCanvas.style.opacity = '0.25';
-                    matrixCanvas.style.zIndex = '85';
-                    matrixActive = true;
-                    matrixLoop();
-                    setTimeout(() => {
-                        matrixActive = false;
-                        cancelAnimationFrame(animationId);
-                        matrixCanvas.style.opacity = '0';
-                        matrixCanvas.style.transition = 'opacity 1s ease-out';
-                        setTimeout(() => {
-                            matrixCanvas.classList.add('hidden');
-                            matrixCanvas.style.zIndex = '100';
-                        }, 1000);
-                    }, 2200);
-                }
-            });
-        })();
+        });
     </script>
 </body>
+</html>
 </html>
